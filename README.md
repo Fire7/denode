@@ -16,7 +16,7 @@ Project is only proof of concept, many cases may not works. Pull requests and di
 
 ### Usage
 ```
- deno run -A --unstable https://raw.githubusercontent.com/Fire7/denode/master/mod.ts function.ts ./bundle
+ deno run -A --unstable deno.land/x/denode/mod.ts function.ts ./bundle
 ```
 
 ### Options
