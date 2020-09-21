@@ -97,11 +97,17 @@ Deno.writeTextFileSync(bundleImportMapPath, JSON.stringify(importMap));
 console.log('Deno bundle...');
 
 const process = Deno.run({
-      cmd: ["deno", "bundle", "--unstable", `--importmap=${bundleImportMapPath}`, input]
-  ,stdout: 'piped',
+  cmd: ["deno", "bundle", "--unstable", `--importmap=${bundleImportMapPath}`, input],
+  stdout: 'piped',
 });
 
 const emit = await process.output();
+const status = await process.status();
+
+if (!status.success) {
+  throw status.code;
+}
+
 let code =  new TextDecoder("utf-8").decode(emit);
 
 console.log('Customs:');
