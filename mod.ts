@@ -1,9 +1,7 @@
-import babelCore from "https://dev.jspm.io/@babel/core";
-import babelPresetEnv from "https://dev.jspm.io/@babel/preset-env";
-import babelClassPropsPlugin from "https://dev.jspm.io/@babel/plugin-proposal-class-properties";
+import babel from "https://dev.jspm.io/@babel/standalone@7.12.4";
 import uniq from "https://deno.land/x/lodash@4.17.15-es/uniq.js";
 import * as fs from "https://deno.land/std@0.69.0/fs/mod.ts";
-import { parse } from "https://deno.land/std/flags/mod.ts";
+import { parse } from "https://deno.land/std@0.69.0/flags/mod.ts";
 
 const args = parse(Deno.args);
 
@@ -148,17 +146,15 @@ console.log('Babel Transpile to Node...');
 // Transpile code to support Node
 const babelConfig = {
   presets: [
-    [babelPresetEnv, {
+    ['env', {
       targets: { node: config.node } ,
     }]],
   plugins: [
-    babelClassPropsPlugin,
+    'proposal-class-properties',
   ]
 };
 
-const result = babelCore.transformSync(code, babelConfig);
-
-
+const result = babel.transform(code, babelConfig);
 
 code = result.code;
 
@@ -236,7 +232,7 @@ Deno.removeSync(tempDirPath,{"recursive": true});
 // 5. Copy static files
 if (config.static) {
   console.log('Copy static...');
-  fs.copySync(config.static, BUNDLE_PATH, { overwrite: true });
+  fs.copySync(config.static!, BUNDLE_PATH, { overwrite: true });
 }
 
 console.log('Bundle complete.');
