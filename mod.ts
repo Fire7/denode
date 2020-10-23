@@ -79,7 +79,9 @@ uniq([...Object.keys(defaultImportMap.imports), ...Object.keys(deps)]).forEach((
   if (deps[module]) {
     if (deps[module].npm) {
       packageJSON.dependencies[module] = deps[module].npm;
-      importMap.imports[module] = emptyStubPath;
+      if (defaultImportMap.imports[module]) { // Add to Deno importmap only if needed.
+        importMap.imports[module] = emptyStubPath;
+      }
       umdModules.push(deps[module]);
     }
 
