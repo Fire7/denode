@@ -30,18 +30,19 @@ const DEFAULT_CONFIG: IConfig = {
 
 const config: IConfig = {
   ...DEFAULT_CONFIG,
-  ...(fs.existsSync(configPath) ? JSON.parse(Deno.readTextFileSync(configPath)) : {})
+  ...(fs.existsSync(configPath) ? JSON.parse(Deno.readTextFileSync(configPath)) : {} ?? {})
 };
 
 
 const importMapPath = args.importmap ?? './import_map.json';
 
-const defaultImportMap = fs.existsSync(importMapPath) ? JSON.parse(Deno.readTextFileSync(importMapPath)) : {};
+const defaultImportMap = fs.existsSync(importMapPath) ? JSON.parse(Deno.readTextFileSync(importMapPath)) : {} ?? {};
 
 console.log('Creating temp files...');
 
 const packageJSON: any = {
   name: 'bundle',
+  type: 'module',
   version: '1.0.0',
   dependencies: {
     'node-fetch': '2.6.1',
@@ -86,7 +87,7 @@ uniq([...Object.keys(defaultImportMap.imports), ...Object.keys(deps)]).forEach((
     }
 
     if (deps[module].std === 'fs') {
-      importMap.imports[module] = fsStubPath;
+      importMap.imports[module] = emptyStubPath;
     }
   }
 })
@@ -115,6 +116,7 @@ console.log('Replace empty stubs...');
 // Remove empty stub content
 code = code.replaceAll(emptyStubContent, '');
 
+/*
 
 console.log('Transpile to commonjs export...');
 
@@ -127,7 +129,7 @@ if (code.includes('const __exp = await __instantiate')) {
     /const __exp = await __instantiate\("(.+)", true\);/,
     `
       let __exp;
-      
+
       (async () => {
         __exp = await __instantiate("$1", true);
       })();
@@ -156,13 +158,17 @@ const babelConfig = {
   ]
 };
 
+// @ts-ignore
 const result = babel.transform(code, babelConfig);
 
 code = result.code;
 
+ */
+
 let nodeContent = `
-  const fs = require('fs');
-  const fsPromises = require('fs').promises;
+  import fs from 'fs'; 
+  // const fs = require('fs');
+  // const fsPromises = require('fs').promises;
 
   const DenoStub = {
     build: {
@@ -175,16 +181,18 @@ let nodeContent = `
     }
   };
   
-  const DenoFS = Object.assign({}, fs, fsPromises);
-  const Deno = Object.assign({}, DenoFS, DenoStub);
+  // const DenoFS = Object.assign({}, fs, fsPromises);
+  const Deno = Object.assign({}, fs, DenoStub);
   
   global.Deno = Deno;
-  global.fs = DenoFS;
+  global.fs = fs;
   
-  const { performance } = require('perf_hooks');
+  import { performance } from 'perf_hooks';
+  // const { performance } = require('perf_hooks');
   global.perfomance = performance;
   
-  const fetch = require('node-fetch');
+  import fetch from 'node-fetch';
+  // const fetch = require('node-fetch');
   global.fetch = fetch;
 
   global.window = global;  // Support Deno
@@ -194,11 +202,14 @@ let nodeContent = `
 umdModules.forEach((moduleConfig) => {
   if (!moduleConfig.global) {
     nodeContent += `
-      require('${moduleConfig.name}');
+      // require('${moduleConfig.name}');
+      import '${moduleConfig.name}';
     `;
   } else {
     nodeContent += `
-      const ${moduleConfig.global}Module = require('${moduleConfig.name}');
+      // const ${moduleConfig.global}Module = require('${moduleConfig.name}');
+      import ${moduleConfig.global}Module from '${moduleConfig.name}';
+      
       global.${moduleConfig.global} = ${moduleConfig.global}Module${moduleConfig.path ?? ''};
     `;
   }
