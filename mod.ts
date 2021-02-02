@@ -78,7 +78,7 @@ uniq([...Object.keys(defaultImportMap.imports), ...Object.keys(deps)]).forEach((
 
   if (deps[module]) {
     if (deps[module].npm) {
-      packageJSON.dependencies[module] = deps[module].npm;
+      packageJSON.dependencies[deps[module].name ?? module] = deps[module].npm;
       if (defaultImportMap.imports[module]) { // Add to Deno importmap only if needed.
         importMap.imports[module] = emptyStubPath;
       }
@@ -156,7 +156,8 @@ const babelConfig = {
   ]
 };
 
-const result = babel.transform(code, babelConfig);
+const result = (babel as any).transform(code, babelConfig);
+
 
 code = result.code;
 
@@ -189,6 +190,14 @@ let nodeContent = `
 
   global.window = global;  // Support Deno
   global.globalThis = global; // Support Deno
+  
+  global.atob = function(a) {
+      return new Buffer(a, 'base64').toString('binary');
+  };
+
+  global.btoa = function(b) {
+      return new Buffer(b).toString('base64');
+  }
 `;
 
 umdModules.forEach((moduleConfig) => {
